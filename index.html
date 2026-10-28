@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2026台東市民代表第三選區報票系統</title>
+    <title>2026 手機版開票統計系統 (雲端版)</title>
     <style>
-        /* 手機版優化 CSS */
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 10px; background-color: #f4f7f6; margin: 0; color: #333;}
         h1 { text-align: center; color: #2c3e50; font-size: 22px; margin-top: 10px;}
         h2 { font-size: 18px; color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 5px; margin-top: 0;}
@@ -15,7 +14,6 @@
         .input-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #555;}
         .input-group select, .input-group input { width: 100%; padding: 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; background-color: #fff;}
         
-        /* 針對姓名與電話欄位做微調，讓它更像填寫表單區塊 */
         .contact-info-box { background-color: #e8f4f8; padding: 12px; border-radius: 8px; margin-top: 15px; margin-bottom: 15px; border: 1px solid #d4e6f1;}
         .contact-info-box .input-group:last-child { margin-bottom: 0; }
 
@@ -23,7 +21,7 @@
         button:active { background-color: #2980b9; transform: scale(0.98); }
         .btn-secondary { background-color: #95a5a6; }
         .btn-success { background-color: #27ae60; }
-        .btn-danger { background-color: #e74c3c; } /* 紅色按鈕樣式 */
+        .btn-danger { background-color: #e74c3c; }
         .btn-sm-danger { background-color: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 14px; cursor: pointer; width: auto; margin: 0;}
         
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 15px; }
@@ -31,7 +29,6 @@
         th { background-color: #f8f9fa; color: #7f8c8d; }
         .rank-1 { font-weight: bold; color: #e74c3c; background-color: #fff4f4;}
         
-        /* 詳細報表左右滑動 */
         .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 15px; border: 1px solid #eee; border-radius: 8px;}
         .detail-table th, .detail-table td { white-space: nowrap; padding: 8px 12px; font-size: 14px;}
         .detail-table th small { display: block; font-weight: normal; color: #999; margin-top: 2px;}
@@ -46,11 +43,22 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* 載入動畫遮罩 */
+        #loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; }
+        .spinner { border: 5px solid #f3f3f3; border-top: 5px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px;}
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-    <h1>🗳️ 2026台東市民代表選區3報票</h1>
+    <!-- 載入中遮罩 -->
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <h2 id="loading-text">連線至雲端資料庫...</h2>
+    </div>
+
+    <h1>🗳️ 2026 開票統計 (雲端連線版)</h1>
     
     <div class="nav-tabs">
         <div class="nav-tab active" onclick="switchTab('input')">📝 輸入票數</div>
@@ -72,26 +80,28 @@
             <!-- JavaScript 動態生成候選人輸入框 -->
         </div>
 
-        <!-- 將報票人移到下方，並加上電話欄位 -->
         <div class="contact-info-box">
             <div class="input-group">
                 <label>👤 報票人姓名：</label>
-                <input type="text" id="reporter-name" placeholder="請輸入姓名 (只需輸入一次)">
+                <input type="text" id="reporter-name" placeholder="請輸入姓名 (只需填一次)">
             </div>
             <div class="input-group">
-                <label>📞 聯絡電話：</label>
-                <input type="tel" id="reporter-phone" placeholder="有問題方便聯繫 (只需輸入一次)">
+                <label>📞 聯絡電話 (選填)：</label>
+                <input type="tel" id="reporter-phone" placeholder="有問題方便聯繫">
             </div>
         </div>
         
-        <!-- 按鈕加上 btn-danger 變成紅色 -->
-        <button class="btn-danger" onclick="saveRecord()">送出並儲存本所票數</button>
+        <button class="btn-danger" onclick="saveRecord()">🚀 送出並儲存至雲端</button>
         <button class="btn-secondary" onclick="clearInputs()">清除票數重填</button>
     </div>
 
     <!-- 統計結果區 -->
     <div id="results-tab" class="tab-content card">
-        <h2>總排名 (總計: <span id="total-votes-count">0</span> 票)</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="margin: 0;">雲端總排名 (總計: <span id="total-votes-count">0</span> 票)</h2>
+            <button class="btn-secondary" style="width: auto; padding: 6px 12px; margin: 0; font-size: 14px;" onclick="fetchCloudData()">🔄 更新最新戰況</button>
+        </div>
+        
         <table>
             <thead>
                 <tr>
@@ -119,19 +129,17 @@
         </div>
         
         <button class="btn-success" onclick="exportCSV()">📥 匯出 Excel (CSV)</button>
-        <button class="btn-danger" onclick="clearAllData()">⚠️ 清除所有資料 (重新計票)</button>
+        <button class="btn-danger" onclick="clearAllData()">⚠️ 清除雲端所有資料</button>
     </div>
 
     <script>
+        // 🚨🚨🚨 請將下方引號內的網址，替換成你剛剛在 Google Apps Script 取得的「網頁應用程式網址」 🚨🚨🚨
+        const API_URL = "https://script.google.com/macros/s/AKfycbzv9aU2dK56G8SkxDy4vYrIN6GJufVUQPsrg0pZmHrvu7DlcF54vjo_61pkA7PaA1x7rw/exec";
+
         let candidates = [
-            { id: 1, name: '陳國民' },
-            { id: 2, name: '賴彥廷' },
-            { id: 3, name: '韋紹福' },
-            { id: 4, name: '陳瀅瑄' },
-            { id: 5, name: '張品澤' },
-            { id: 6, name: '陳孟伸' },
-            { id: 7, name: '陳金溪' },
-            { id: 8, name: '黃冠維' }
+            { id: 1, name: '陳國民' }, { id: 2, name: '賴彥廷' }, { id: 3, name: '韋紹福' },
+            { id: 4, name: '陳瀅瑄' }, { id: 5, name: '張品澤' }, { id: 6, name: '陳孟伸' },
+            { id: 7, name: '陳金溪' }, { id: 8, name: '黃冠維' }
         ];
 
         const pollingStations = [
@@ -148,52 +156,81 @@
             "79 豐原國小教室(二)"
         ];
 
-        // 讀取存在手機裡的開票紀錄
-        let records = JSON.parse(localStorage.getItem('electionRecords')) || [];
+        // 改為儲存在記憶體中，每次操作都會跟雲端同步
+        let records = [];
 
-        function init() {
-            renderStationOptions();
-            renderInputs();
-            updateResults();
+        // 顯示載入動畫
+        function showLoading(text) {
+            document.getElementById('loading-text').innerText = text;
+            document.getElementById('loading-overlay').style.display = 'flex';
+        }
+        function hideLoading() {
+            document.getElementById('loading-overlay').style.display = 'none';
         }
 
-        // 產生開票所下拉選單
+        // 網頁開啟時，自動從雲端抓取資料
+        async function init() {
+            renderInputs();
+            
+            // 如果還沒設定 API URL 就先略過連線
+            if(API_URL.includes("請貼上")) {
+                alert("⚠️ 系統提示：您尚未將 Google Apps Script 的網址貼入程式碼中，目前無法連線至雲端。");
+                renderStationOptions();
+                updateResults();
+                return;
+            }
+            await fetchCloudData();
+        }
+
+        // 從 Google Sheet 讀取資料
+        async function fetchCloudData() {
+            showLoading("正在同步雲端資料...");
+            try {
+                const response = await fetch(API_URL);
+                const result = await response.json();
+                if (result.status === "success") {
+                    records = result.data;
+                    renderStationOptions();
+                    updateResults();
+                }
+            } catch (error) {
+                console.error(error);
+                alert("連線失敗，請檢查網路狀態或 API 網址設定。");
+            }
+            hideLoading();
+        }
+
         function renderStationOptions() {
             const select = document.getElementById('station-name');
             select.innerHTML = '<option value="">請選擇開票所...</option>';
-
             pollingStations.forEach(station => {
                 const isReported = records.some(r => r.station === station);
                 const option = document.createElement('option');
                 option.value = station;
-                
                 if (isReported) {
                     option.text = station + " (已回報)";
                     option.disabled = true;
                 } else {
                     option.text = station;
                 }
-                
                 select.appendChild(option);
             });
         }
 
-        // 切換分頁
         function switchTab(tab) {
             document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            
             if(tab === 'input') {
                 document.querySelectorAll('.nav-tab')[0].classList.add('active');
                 document.getElementById('input-tab').classList.add('active');
             } else {
                 document.querySelectorAll('.nav-tab')[1].classList.add('active');
                 document.getElementById('results-tab').classList.add('active');
-                updateResults();
+                // 切換到戰況時，自動更新一次
+                if(!API_URL.includes("請貼上")) fetchCloudData();
             }
         }
 
-        // 產生候選人輸入框
         function renderInputs() {
             const container = document.getElementById('candidates-input');
             container.innerHTML = '';
@@ -207,36 +244,27 @@
             });
         }
 
-        // 儲存單一開票所紀錄
-        function saveRecord() {
+        // 儲存資料並傳送到 Google Sheet
+        async function saveRecord() {
             const station = document.getElementById('station-name').value;
-            if (!station) {
-                alert('請先在最上方選擇「開票所」！');
-                return;
-            }
+            if (!station) { alert('請先選擇「開票所」！'); return; }
 
             const reporter = document.getElementById('reporter-name').value.trim();
-            if (!reporter) {
-                alert('請輸入您的「報票人姓名」！');
-                return;
-            }
+            if (!reporter) { alert('請輸入您的「報票人姓名」！'); return; }
 
+            // 電話不再強制檢查，為選填
             const phone = document.getElementById('reporter-phone').value.trim();
-            if (!phone) {
-                alert('請輸入您的「聯絡電話」！');
-                return;
-            }
 
             if (records.some(r => r.station === station)) {
-                alert(`⚠️ 錯誤：【${station}】已經有人回報過了！\n\n如果數字有誤，請到「即時戰況」報表將該筆刪除後重新輸入。`);
+                alert(`⚠️ 【${station}】已回報過，若要修改請先至戰況頁面刪除！`);
                 return;
             }
 
             let record = {
-                id: Date.now(),
+                id: Date.now(), // 產生唯一識別碼
                 station: station,
                 reporter: reporter,
-                phone: phone, // 寫入聯絡電話
+                phone: phone, 
                 votes: {}
             };
 
@@ -245,25 +273,30 @@
                 record.votes[c.id] = parseInt(val) || 0;
             });
 
-            records.push(record);
-            localStorage.setItem('electionRecords', JSON.stringify(records));
-            
-            alert(`✅ 已成功儲存【${station}】的票數！\n(報票人：${reporter})`);
-            
-            renderStationOptions();
-            clearInputs();
+            showLoading("正在將票數寫入雲端...");
+            try {
+                // 發送 POST 請求至 GAS
+                await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: "save", data: record })
+                });
+                
+                alert(`✅ 雲端寫入成功！【${station}】`);
+                clearInputs();
+                await fetchCloudData(); // 重新整理最新資料
+                
+            } catch (error) {
+                alert("寫入失敗，請檢查網路連線。");
+                hideLoading();
+            }
         }
 
-        // 清空輸入框 (保留報票人姓名與電話)
         function clearInputs() {
             document.getElementById('station-name').value = '';
-            candidates.forEach(c => {
-                document.getElementById(`cand-${c.id}`).value = '';
-            });
+            candidates.forEach(c => document.getElementById(`cand-${c.id}`).value = '');
             window.scrollTo(0,0);
         }
 
-        // 更新統計圖表與詳細明細
         function updateResults() {
             let totalVotes = 0;
             let candidateTotals = {};
@@ -271,7 +304,7 @@
 
             records.forEach(rec => {
                 candidates.forEach(c => {
-                    let v = rec.votes[c.id] || 0;
+                    let v = parseInt(rec.votes[c.id]) || 0;
                     candidateTotals[c.id] += v;
                     totalVotes += v;
                 });
@@ -301,27 +334,19 @@
                 `;
             });
 
-            // 建立詳細明細表頭 (加入報票人與電話)
             const detailHead = document.getElementById('detail-table-head');
             let headHTML = '<tr><th>📍 開票所</th><th>👤 報票人</th><th>📞 電話</th>';
-            candidates.forEach(c => {
-                headHTML += `<th>${c.id}號<small>${c.name}</small></th>`;
-            });
+            candidates.forEach(c => headHTML += `<th>${c.id}號<small>${c.name}</small></th>`);
             headHTML += '<th>操作</th></tr>';
             detailHead.innerHTML = headHTML;
 
-            // 建立詳細明細內容 (依開票所號碼排序)
             const detailBody = document.getElementById('detail-table-body');
             detailBody.innerHTML = '';
             
             if (records.length === 0) {
                 detailBody.innerHTML = `<tr><td colspan="${candidates.length + 4}" style="text-align:center; padding: 20px;">尚無開票所資料</td></tr>`;
             } else {
-                // 將 records 依據開票所名稱前方的「數字」進行排序
-                let sortedRecords = [...records].sort((a, b) => {
-                    return parseInt(a.station) - parseInt(b.station);
-                });
-
+                let sortedRecords = [...records].sort((a, b) => parseInt(a.station) - parseInt(b.station));
                 sortedRecords.forEach(rec => {
                     let reporterName = rec.reporter ? rec.reporter : '-';
                     let reporterPhone = rec.phone ? rec.phone : '-';
@@ -330,77 +355,73 @@
                         <td>${reporterName}</td>
                         <td>${reporterPhone}</td>`;
                     
-                    candidates.forEach(c => {
-                        let v = rec.votes[c.id] || 0;
-                        rowHTML += `<td>${v}</td>`;
-                    });
-                    
+                    candidates.forEach(c => rowHTML += `<td>${rec.votes[c.id] || 0}</td>`);
                     rowHTML += `<td><button class="btn-sm-danger" onclick="deleteRecord(${rec.id}, '${rec.station}')">刪除</button></td></tr>`;
                     detailBody.innerHTML += rowHTML;
                 });
             }
         }
 
-        // 刪除錯誤紀錄
-        function deleteRecord(id, stationName) {
-            if(confirm(`確定要刪除【${stationName}】的紀錄嗎？`)) {
-                records = records.filter(r => r.id !== id);
-                localStorage.setItem('electionRecords', JSON.stringify(records));
-                updateResults();
-                renderStationOptions();
+        async function deleteRecord(id, stationName) {
+            if(confirm(`確定要從雲端刪除【${stationName}】的紀錄嗎？`)) {
+                showLoading("正在刪除雲端資料...");
+                try {
+                    await fetch(API_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: "delete", id: id })
+                    });
+                    await fetchCloudData();
+                } catch (error) {
+                    alert("刪除失敗！");
+                    hideLoading();
+                }
             }
         }
 
-        function clearAllData() {
-            if(confirm('🚨 警告：確定要清除所有開票所資料嗎？此動作無法復原！')) {
-                records = [];
-                localStorage.removeItem('electionRecords');
-                updateResults();
-                renderStationOptions();
-                alert('資料已全部清除');
+        async function clearAllData() {
+            if(confirm('🚨 警告：確定要清空雲端試算表上的「所有」開票所資料嗎？此動作無法復原！')) {
+                showLoading("正在清空雲端資料庫...");
+                try {
+                    await fetch(API_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: "clearAll" })
+                    });
+                    await fetchCloudData();
+                    alert('資料庫已全部清空！');
+                } catch (error) {
+                    alert("清空失敗！");
+                    hideLoading();
+                }
             }
         }
 
-        // 匯出 CSV (加入電話欄位)
         function exportCSV() {
-            if(records.length === 0) {
-                alert('目前沒有資料可匯出');
-                return;
-            }
-            
+            if(records.length === 0) { alert('目前沒有資料可匯出'); return; }
             let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
             let headers = ["開票所", "報票人", "聯絡電話", ...candidates.map(c => c.name), "總計"];
             csvContent += headers.join(",") + "\n";
             
-            // 匯出時同樣依照開票所號碼排序
             let sortedRecords = [...records].sort((a, b) => parseInt(a.station) - parseInt(b.station));
-
             sortedRecords.forEach(rec => {
-                let reporterName = rec.reporter ? rec.reporter : '';
-                let reporterPhone = rec.phone ? rec.phone : '';
-                let row = [rec.station, reporterName, reporterPhone];
+                let row = [rec.station, rec.reporter || '', rec.phone || ''];
                 let rowTotal = 0;
-                
                 candidates.forEach(c => {
-                    let v = rec.votes[c.id] || 0;
+                    let v = parseInt(rec.votes[c.id]) || 0;
                     row.push(v);
                     rowTotal += v;
                 });
-                
                 row.push(rowTotal);
                 csvContent += row.join(",") + "\n";
             });
-            
             var encodedUri = encodeURI(csvContent);
             var link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "2026_開票詳細明細.csv");
+            link.setAttribute("download", "2026_開票詳細明細_雲端版.csv");
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         }
 
-        // 啟動程式
         init();
     </script>
 </body>
