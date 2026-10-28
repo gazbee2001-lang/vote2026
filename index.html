@@ -134,7 +134,6 @@
     </div>
 
     <script>
-        // 🚨🚨🚨 請務必貼回你專屬的 Google Apps Script 網址 🚨🚨🚨
         const API_URL = "https://script.google.com/macros/s/AKfycbzv9aU2dK56G8SkxDy4vYrIN6GJufVUQPsrg0pZmHrvu7DlcF54vjo_61pkA7PaA1x7rw/exec";
 
         let candidates = [
@@ -325,19 +324,17 @@
                 `;
             });
 
-            // 建立詳細明細表頭 (報票人與電話移至右側)
             const detailHead = document.getElementById('detail-table-head');
             let headHTML = '<tr><th>📍 開票所</th>';
             candidates.forEach(c => headHTML += `<th>${c.id}號<small>${c.name}</small></th>`);
-            headHTML += '<th>👤 報票人</th><th>📞 電話</th><th>操作</th></tr>';
+            headHTML += '<th>總票數</th><th>👤 報票人</th><th>📞 電話</th><th>操作</th></tr>';
             detailHead.innerHTML = headHTML;
 
-            // 建立詳細明細內容 
             const detailBody = document.getElementById('detail-table-body');
             detailBody.innerHTML = '';
             
             if (records.length === 0) {
-                detailBody.innerHTML = `<tr><td colspan="${candidates.length + 4}" style="text-align:center; padding: 20px;">尚無開票所資料</td></tr>`;
+                detailBody.innerHTML = `<tr><td colspan="${candidates.length + 5}" style="text-align:center; padding: 20px;">尚無開票所資料</td></tr>`;
             } else {
                 let sortedRecords = [...records].sort((a, b) => parseInt(a.station) - parseInt(b.station));
                 
@@ -345,7 +342,6 @@
                     let reporterName = rec.reporter ? rec.reporter : '-';
                     let reporterPhone = rec.phone ? rec.phone : '-';
                     
-                    // 先計算該開票所的「總票數」，用來算百分比
                     let stationTotal = 0;
                     candidates.forEach(c => {
                         stationTotal += parseInt(rec.votes[c.id]) || 0;
@@ -353,15 +349,13 @@
 
                     let rowHTML = `<tr><td><strong>${rec.station}</strong></td>`;
                     
-                    // 填入各候選人票數與佔比
                     candidates.forEach(c => {
                         let v = parseInt(rec.votes[c.id]) || 0;
                         let pct = stationTotal === 0 ? "0.00" : ((v / stationTotal) * 100).toFixed(2);
                         rowHTML += `<td>${v}<span class="pct-text">(${pct}%)</span></td>`;
                     });
                     
-                    // 補上右側的報票人、電話、刪除按鈕
-                    rowHTML += `<td>${reporterName}</td><td>${reporterPhone}</td>`;
+                    rowHTML += `<td><strong>${stationTotal}</strong></td><td>${reporterName}</td><td>${reporterPhone}</td>`;
                     rowHTML += `<td><button class="btn-sm-danger" onclick="deleteRecord(${rec.id}, '${rec.station}')">刪除</button></td></tr>`;
                     
                     detailBody.innerHTML += rowHTML;
@@ -406,7 +400,6 @@
             if(records.length === 0) { alert('目前沒有資料可匯出'); return; }
             let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
             
-            // 匯出順序也配合調整：開票所 -> 候選人 -> 總計 -> 報票人 -> 電話
             let headers = ["開票所", ...candidates.map(c => c.name), "總計", "報票人", "聯絡電話"];
             csvContent += headers.join(",") + "\n";
             
