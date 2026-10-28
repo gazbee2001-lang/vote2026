@@ -15,11 +15,15 @@
         .input-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #555;}
         .input-group select, .input-group input { width: 100%; padding: 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; background-color: #fff;}
         
+        /* 針對姓名與電話欄位做微調，讓它更像填寫表單區塊 */
+        .contact-info-box { background-color: #e8f4f8; padding: 12px; border-radius: 8px; margin-top: 15px; margin-bottom: 15px; border: 1px solid #d4e6f1;}
+        .contact-info-box .input-group:last-child { margin-bottom: 0; }
+
         button { width: 100%; padding: 14px; font-size: 18px; font-weight: bold; background-color: #3498db; color: white; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; }
         button:active { background-color: #2980b9; transform: scale(0.98); }
         .btn-secondary { background-color: #95a5a6; }
         .btn-success { background-color: #27ae60; }
-        .btn-danger { background-color: #e74c3c; }
+        .btn-danger { background-color: #e74c3c; } /* 紅色按鈕樣式 */
         .btn-sm-danger { background-color: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 14px; cursor: pointer; width: auto; margin: 0;}
         
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 15px; }
@@ -56,6 +60,7 @@
     <!-- 票數輸入區 -->
     <div id="input-tab" class="tab-content active card">
         <h2>新增開票所數據</h2>
+        
         <div class="input-group">
             <label>📍 選擇開票所：</label>
             <select id="station-name">
@@ -66,9 +71,22 @@
         <div id="candidates-input">
             <!-- JavaScript 動態生成候選人輸入框 -->
         </div>
+
+        <!-- 將報票人移到下方，並加上電話欄位 -->
+        <div class="contact-info-box">
+            <div class="input-group">
+                <label>👤 報票人姓名：</label>
+                <input type="text" id="reporter-name" placeholder="請輸入姓名 (只需輸入一次)">
+            </div>
+            <div class="input-group">
+                <label>📞 聯絡電話：</label>
+                <input type="tel" id="reporter-phone" placeholder="有問題方便聯繫 (只需輸入一次)">
+            </div>
+        </div>
         
-        <button onclick="saveRecord()">送出並儲存本所票數</button>
-        <button class="btn-secondary" onclick="clearInputs()">清除重填</button>
+        <!-- 按鈕加上 btn-danger 變成紅色 -->
+        <button class="btn-danger" onclick="saveRecord()">送出並儲存本所票數</button>
+        <button class="btn-secondary" onclick="clearInputs()">清除票數重填</button>
     </div>
 
     <!-- 統計結果區 -->
@@ -105,7 +123,6 @@
     </div>
 
     <script>
-        // ✅ 已更新為 7 位新候選人名單
         let candidates = [
             { id: 1, name: '陳國民' },
             { id: 2, name: '賴彥廷' },
@@ -117,7 +134,6 @@
             { id: 8, name: '黃冠維' }
         ];
 
-        // 預設的開票所清單 (沿用台東市第三選區設定)
         const pollingStations = [
             "48 復興國小", "49 台東縣政府社會處大禮堂", "50 東海國小教室(一)", "51 東海國小教室(二)",
             "52 台東專科教室(一)", "53 台東專科教室(二)", "54 光明國小教室(一)",
@@ -199,6 +215,18 @@
                 return;
             }
 
+            const reporter = document.getElementById('reporter-name').value.trim();
+            if (!reporter) {
+                alert('請輸入您的「報票人姓名」！');
+                return;
+            }
+
+            const phone = document.getElementById('reporter-phone').value.trim();
+            if (!phone) {
+                alert('請輸入您的「聯絡電話」！');
+                return;
+            }
+
             if (records.some(r => r.station === station)) {
                 alert(`⚠️ 錯誤：【${station}】已經有人回報過了！\n\n如果數字有誤，請到「即時戰況」報表將該筆刪除後重新輸入。`);
                 return;
@@ -207,6 +235,8 @@
             let record = {
                 id: Date.now(),
                 station: station,
+                reporter: reporter,
+                phone: phone, // 寫入聯絡電話
                 votes: {}
             };
 
@@ -218,12 +248,13 @@
             records.push(record);
             localStorage.setItem('electionRecords', JSON.stringify(records));
             
-            alert(`✅ 已成功儲存【${station}】的票數！`);
+            alert(`✅ 已成功儲存【${station}】的票數！\n(報票人：${reporter})`);
             
             renderStationOptions();
             clearInputs();
         }
 
+        // 清空輸入框 (保留報票人姓名與電話)
         function clearInputs() {
             document.getElementById('station-name').value = '';
             candidates.forEach(c => {
@@ -270,26 +301,40 @@
                 `;
             });
 
+            // 建立詳細明細表頭 (加入報票人與電話)
             const detailHead = document.getElementById('detail-table-head');
-            let headHTML = '<tr><th>📍 開票所</th>';
+            let headHTML = '<tr><th>📍 開票所</th><th>👤 報票人</th><th>📞 電話</th>';
             candidates.forEach(c => {
                 headHTML += `<th>${c.id}號<small>${c.name}</small></th>`;
             });
             headHTML += '<th>操作</th></tr>';
             detailHead.innerHTML = headHTML;
 
+            // 建立詳細明細內容 (依開票所號碼排序)
             const detailBody = document.getElementById('detail-table-body');
             detailBody.innerHTML = '';
             
             if (records.length === 0) {
-                detailBody.innerHTML = `<tr><td colspan="${candidates.length + 2}" style="text-align:center; padding: 20px;">尚無開票所資料</td></tr>`;
+                detailBody.innerHTML = `<tr><td colspan="${candidates.length + 4}" style="text-align:center; padding: 20px;">尚無開票所資料</td></tr>`;
             } else {
-                [...records].reverse().forEach(rec => {
-                    let rowHTML = `<tr><td><strong>${rec.station}</strong></td>`;
+                // 將 records 依據開票所名稱前方的「數字」進行排序
+                let sortedRecords = [...records].sort((a, b) => {
+                    return parseInt(a.station) - parseInt(b.station);
+                });
+
+                sortedRecords.forEach(rec => {
+                    let reporterName = rec.reporter ? rec.reporter : '-';
+                    let reporterPhone = rec.phone ? rec.phone : '-';
+                    let rowHTML = `<tr>
+                        <td><strong>${rec.station}</strong></td>
+                        <td>${reporterName}</td>
+                        <td>${reporterPhone}</td>`;
+                    
                     candidates.forEach(c => {
                         let v = rec.votes[c.id] || 0;
                         rowHTML += `<td>${v}</td>`;
                     });
+                    
                     rowHTML += `<td><button class="btn-sm-danger" onclick="deleteRecord(${rec.id}, '${rec.station}')">刪除</button></td></tr>`;
                     detailBody.innerHTML += rowHTML;
                 });
@@ -316,7 +361,7 @@
             }
         }
 
-        // 匯出 CSV
+        // 匯出 CSV (加入電話欄位)
         function exportCSV() {
             if(records.length === 0) {
                 alert('目前沒有資料可匯出');
@@ -324,17 +369,24 @@
             }
             
             let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
-            let headers = ["開票所", ...candidates.map(c => c.name), "總計"];
+            let headers = ["開票所", "報票人", "聯絡電話", ...candidates.map(c => c.name), "總計"];
             csvContent += headers.join(",") + "\n";
             
-            records.forEach(rec => {
-                let row = [rec.station];
+            // 匯出時同樣依照開票所號碼排序
+            let sortedRecords = [...records].sort((a, b) => parseInt(a.station) - parseInt(b.station));
+
+            sortedRecords.forEach(rec => {
+                let reporterName = rec.reporter ? rec.reporter : '';
+                let reporterPhone = rec.phone ? rec.phone : '';
+                let row = [rec.station, reporterName, reporterPhone];
                 let rowTotal = 0;
+                
                 candidates.forEach(c => {
                     let v = rec.votes[c.id] || 0;
                     row.push(v);
                     rowTotal += v;
                 });
+                
                 row.push(rowTotal);
                 csvContent += row.join(",") + "\n";
             });
