@@ -17,10 +17,10 @@
         .contact-info-box { background-color: #e8f4f8; padding: 12px; border-radius: 8px; margin-top: 15px; margin-bottom: 15px; border: 1px solid #d4e6f1;}
         .contact-info-box .input-group:last-child { margin-bottom: 0; }
 
-        /* 防呆勾選框專屬樣式 */
-        .checkbox-group { display: flex; align-items: flex-start; margin-top: 15px; margin-bottom: 15px; padding: 12px; background-color: #fff3cd; border: 1px solid #ffeeba; border-radius: 8px; color: #856404; }
-        .checkbox-group input[type="checkbox"] { width: 24px; height: 24px; margin-right: 12px; margin-top: 2px; flex-shrink: 0; }
-        .checkbox-group label { font-size: 15px; font-weight: bold; line-height: 1.5; margin: 0; cursor: pointer; color: #d35400;}
+        /* 去除黃底，融入背景的勾選框樣式 */
+        .checkbox-group { display: flex; align-items: flex-start; margin-top: 15px; margin-bottom: 15px; padding: 5px; }
+        .checkbox-group input[type="checkbox"] { width: 22px; height: 22px; margin-right: 10px; margin-top: 2px; flex-shrink: 0; cursor: pointer; }
+        .checkbox-group label { font-size: 15px; font-weight: bold; line-height: 1.5; margin: 0; cursor: pointer; color: #444; }
 
         button { width: 100%; padding: 14px; font-size: 18px; font-weight: bold; background-color: #3498db; color: white; border: none; border-radius: 8px; cursor: pointer; margin-top: 5px; }
         button:active { background-color: #2980b9; transform: scale(0.98); }
@@ -92,12 +92,12 @@
                 <input type="text" id="reporter-name" placeholder="請輸入姓名 (只需填一次)">
             </div>
             <div class="input-group">
-                <label>📞 聯絡電話：</label>
-                <input type="tel" id="reporter-phone" placeholder="有問題方便聯繫 (選填)">
+                <label>📞 聯絡電話 ：</label>
+                <input type="tel" id="reporter-phone" placeholder="有問題方便聯繫(選填)">
             </div>
         </div>
 
-        <!-- 防呆勾選區塊 -->
+        <!-- 融入背景的勾選防呆區塊 -->
         <div class="checkbox-group">
             <input type="checkbox" id="confirm-check">
             <label for="confirm-check">我已確認填寫之票數無誤，送出後無法修改，若需更新票數請聯繫 089-327806 或 089-335381，謝謝。</label>
@@ -141,7 +141,7 @@
         </div>
         
         <button class="btn-success" onclick="exportCSV()">📥 匯出 Excel (CSV)</button>
-        <button class="btn-danger" onclick="clearAllData()">⚠️ 清除雲端所有資料</button>
+        <button class="btn-danger" onclick="clearAllData()">⚠️ 清除雲端所有資料(請勿亂按)</button>
     </div>
 
     <script>
@@ -257,7 +257,7 @@
 
             const phone = document.getElementById('reporter-phone').value.trim();
 
-            // 防呆機制：檢查是否已勾選確認框
+            // 防呆檢查：確保已打勾
             const confirmCheck = document.getElementById('confirm-check');
             if (!confirmCheck.checked) {
                 alert('⚠️ 請再看一眼票數是否正確，並在最下方勾選「已確認填寫之票數無誤」同意事項，才能送出資料！');
@@ -299,10 +299,10 @@
             }
         }
 
-        // 清空輸入框並將打勾取消
+        // 清空輸入框與打勾狀態
         function clearInputs() {
             document.getElementById('station-name').value = '';
-            document.getElementById('confirm-check').checked = false; // 取消勾選防呆框
+            document.getElementById('confirm-check').checked = false; 
             candidates.forEach(c => document.getElementById(`cand-${c.id}`).value = '');
             window.scrollTo(0,0);
         }
@@ -400,7 +400,7 @@
         }
 
         async function clearAllData() {
-            if(confirm('🚨 警告：確定要清空雲端試算表上的「所有」開票所資料嗎？此動作無法復原！')) {
+            if(confirm('🚨 警告 我勸你現在給我按下【取消】！確定會清空雲端試算表上的「所有」開票所資料嗎？此動作無法復原！')) {
                 showLoading("正在清空雲端資料庫...");
                 try {
                     await fetch(API_URL, {
