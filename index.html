@@ -92,15 +92,15 @@
                 <input type="text" id="reporter-name" placeholder="請輸入姓名 (只需填一次)">
             </div>
             <div class="input-group">
-                <label>📞 聯絡電話 (選填)：</label>
-                <input type="tel" id="reporter-phone" placeholder="有問題方便聯繫">
+                <label>📞 聯絡電話：</label>
+                <input type="tel" id="reporter-phone" placeholder="有問題方便聯繫 (選填)">
             </div>
         </div>
 
         <!-- 防呆勾選區塊 -->
         <div class="checkbox-group">
             <input type="checkbox" id="confirm-check">
-            <label for="confirm-check">已確認填寫之票數無誤，送出後無法修改，若需更新票數請聯繫 089-327806 或 089-335381，謝謝。</label>
+            <label for="confirm-check">我已確認填寫之票數無誤，送出後無法修改，若需更新票數請聯繫 089-327806 或 089-335381，謝謝。</label>
         </div>
         
         <button class="btn-danger" onclick="saveRecord()">🚀 送出並儲存至雲端</button>
@@ -260,7 +260,7 @@
             // 防呆機制：檢查是否已勾選確認框
             const confirmCheck = document.getElementById('confirm-check');
             if (!confirmCheck.checked) {
-                alert('⚠️ 請先在最下方勾選「已確認填寫之票數無誤」同意事項，才能送出資料！');
+                alert('⚠️ 請再看一眼票數是否正確，並在最下方勾選「已確認填寫之票數無誤」同意事項，才能送出資料！');
                 return;
             }
 
